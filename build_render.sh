@@ -1,1 +1,0 @@
-gcc -shared -Wall -O3 asset/render.c -o asset/render.so -fPIC
