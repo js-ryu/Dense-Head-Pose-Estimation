@@ -1,0 +1,4 @@
+head_pose_node:
+  ros__parameters:
+     video_input: 0
+     threshold: [-35, 35, 10, -30]
