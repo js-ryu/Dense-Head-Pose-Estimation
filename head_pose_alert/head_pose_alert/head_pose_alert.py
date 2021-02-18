@@ -5,15 +5,14 @@ import cv2
 import argparse
 
 import os
-import time
+import rclpy
+import ament_index_python
 from collections import deque
 
 from . import service
 
-import rclpy
-
 from std_msgs.msg import Int16MultiArray, Float32MultiArray
-#from auv_msgs.msg import RPY
+
 
 alert_check = deque(maxlen=90)
 
@@ -36,14 +35,15 @@ class headposeAlert:
         self.alertMsg = Int16MultiArray()
         self.alertMsg.data = [0] * 2
 
+        pkg_dir = ament_index_python.get_resource('packages', 'head_pose_alert')[1]
+        pkg_dir_lst = pkg_dir.split('/')
 
-        cwd = os.getcwd()
-        cwd = cwd + "/src/head_pose_alert/head_pose_alert/weights/"
+        weights_dir = '/' + pkg_dir_lst[1] + '/' + pkg_dir_lst[2] + '/' + pkg_dir_lst[3] + '/src/head_pose_alert/head_pose_alert/weights/'
 
-        self.fd = service.UltraLightFaceDetecion(cwd + "RFB-320.tflite",
+        self.fd = service.UltraLightFaceDetecion(weights_dir + "RFB-320.tflite",
                                             conf_threshold=0.95)
         
-        self.fa = service.DepthFacialLandmarks(cwd + "sparse_face.tflite")
+        self.fa = service.DepthFacialLandmarks(weights_dir + "sparse_face.tflite")
         
         self.handler = getattr(service, "pose")
 
@@ -83,7 +83,7 @@ class headposeAlert:
             elif pyr[0] <= d_thr:
                 ud = 2
 
-            #None : 0, Left : 1, Right : 2, Up : 3, Down : 4, Left&Up : 5, Left&Down : 6, Right&Up : 7, Right&Down : 8
+            #None : 0, Left : 1, Right : 2, Up : 3, Down : 4, Left&Up : 5, Left&Down : 6, Right&Up : 7, Right&Down : 8        self.node.get_logger().info("!!!!!!!!!!!!!!1test!!!!!!!!!!!!!!!!!!")
             if lr == 0 and ud == 0:
                 alert_num = 0
             elif lr == 1 and ud == 0:
@@ -116,69 +116,19 @@ class headposeAlert:
             self.rpyPub.publish(self.rpyMsg)
             self.alertPub.publish(self.alertMsg)
 
+            #If you want to watch the video, uncomment it!
             '''
             cv2.imshow("demo", frame)
             if cv2.waitKey(1) == ord("q"):
                 break
             '''
 
+
 def main():
     rclpy.init()
     headposeAlert()
     
 
-#def main(args, color=(224, 255, 255)):
-"""
-def main(color=(224, 255, 255)):
-
-    cwd = os.getcwd()
-    cwd = cwd + "/src/head_pose_alert/head_pose_alert/weights/"
-
-    fd = service.UltraLightFaceDetecion(cwd + "RFB-320.tflite",
-                                        conf_threshold=0.95)
-    
-    fa = service.DepthFacialLandmarks(cwd + "sparse_face.tflite")
-    
-    handler = getattr(service, "pose")
-    
-    '''
-    try:
-        input_video = int(args.video)
-
-    except ValueError:
-        input_video = args.video
-    '''
-
-    input_video = 0 
-    cap = cv2.VideoCapture(input_video)
-    
-    while True:
-        ret, frame = cap.read()
-
-        if not ret:
-            break
-
-        # face detection
-        boxes, scores = fd.inference(frame)
-
-        # raw copy for reconstruction
-        feed = frame.copy()
-
-        for results in fa.get_landmarks(feed, boxes):
-            pyr = handler(frame, results, color)
-            print(pyr)
-
-        '''
-        cv2.imshow("demo", frame)
-        if cv2.waitKey(1) == ord("q"):
-            break
-        '''
-"""
-
 if __name__ == "__main__":
     main()
-    #parser = argparse.ArgumentParser(description="Video demo script.")
-    #parser.add_argument("-v", "--video", type=str, required=True)
-
-    #args = parser.parse_args()
 
